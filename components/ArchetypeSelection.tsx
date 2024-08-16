@@ -20,95 +20,95 @@ const ArchetypeSelection: FC = () => {
 		fetchArchetypes();
 	}, []);
 
-	const handleHeroTypeChange = (
-		event: React.ChangeEvent<HTMLSelectElement>,
-	) => {
-		const newHeroType = event.target.value as HeroType;
+	const handleHeroTypeChange = (newHeroType: HeroType) => {
 		if (character) {
 			updateCharacter({ heroType: newHeroType, archetypes: [] });
 		}
 	};
 
-	const handleArchetypeChange = (
-		event: React.ChangeEvent<HTMLSelectElement>,
-		index: number,
-	) => {
+	const handleArchetypeToggle = (archetypeName: Archetype) => {
 		if (character) {
-			const newArchetype = event.target.value as Archetype;
-			const newArchetypes = [...character.archetypes];
-			newArchetypes[index] = newArchetype;
+			const maxSelections =
+				character.heroType === "Focused"
+					? 1
+					: character.heroType === "Fused"
+						? 2
+						: 3;
+			const newArchetypes = character.archetypes.includes(archetypeName)
+				? character.archetypes.filter((a) => a !== archetypeName)
+				: [...character.archetypes, archetypeName].slice(0, maxSelections);
 			updateCharacter({ archetypes: newArchetypes });
 		}
 	};
 
-	const getArchetypeSelections = () => {
-		const selectCount =
-			character?.heroType === "Focused"
-				? 1
-				: character?.heroType === "Fused"
-					? 2
-					: 3;
-		return Array(selectCount)
-			.fill(null)
-			.map((_, index) => {
-				const archetypeKey = character?.archetypes[index] || `new-${index}`;
-				return (
-					<div key={archetypeKey} className="form-control mt-4">
-						<label className="label">
-							<span className="label-text">Archetype {index + 1}</span>
-						</label>
-						<select
-							className="select select-bordered w-full max-w-xs"
-							value={character?.archetypes[index] || ""}
-							onChange={(event) => handleArchetypeChange(event, index)}
-						>
-							<option disabled value="">
-								Choose an Archetype
-							</option>
-							{archetypes.map((archetype) => (
-								<option key={archetype.id} value={archetype.name}>
-									{archetype.emoji} {archetype.name} (Complexity:{" "}
-									{archetype.complexity})
-								</option>
-							))}
-						</select>
-					</div>
-				);
-			});
+	const isArchetypeSelected = (archetypeName: Archetype) => {
+		return character?.archetypes.includes(archetypeName);
 	};
-
-	const selectedArchetypes = archetypes.filter((archetype) =>
-		character?.archetypes.includes(archetype.name),
-	);
 
 	return (
 		<div className="card bg-base-200 shadow-xl mb-4">
 			<div className="card-body">
 				<h2 className="card-title">Hero Type & Archetype Selection</h2>
-				<div className="form-control">
-					<label className="label">
-						<span className="label-text">Select Hero Type</span>
-					</label>
-					<select
-						className="select select-bordered w-full max-w-xs"
-						value={character?.heroType}
-						onChange={handleHeroTypeChange}
-					>
-						<option value={"Focused"}>Focused</option>
-						<option value={"Fused"}>Fused</option>
-						<option value={"Frantic"}>Frantic</option>
-					</select>
+				<div className="flex space-x-4 mb-4">
+					{["Focused", "Fused", "Frantic"].map((type) => (
+						<button
+							key={type}
+							type="button"
+							className={`btn ${character?.heroType === type ? "btn-primary" : "btn-outline"}`}
+							onClick={() => handleHeroTypeChange(type as HeroType)}
+						>
+							{type}
+						</button>
+					))}
 				</div>
-				{getArchetypeSelections()}
-				{selectedArchetypes.map((archetype) => (
-					<div key={archetype.name} className="mt-4">
-						<h3 className="text-lg font-semibold">
-							{archetype.emoji} {archetype.name}
-						</h3>
-						<p>{archetype.description}</p>
-						<p className="mt-2">Complexity: {archetype.complexity} / 3</p>
+				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+					{archetypes.map((archetype) => (
+						<div
+							key={archetype.id}
+							className={`card ${
+								isArchetypeSelected(archetype.name)
+									? "bg-primary text-primary-content"
+									: "bg-base-100"
+							} cursor-pointer hover:shadow-lg transition-shadow`}
+							onClick={() => handleArchetypeToggle(archetype.name)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									handleArchetypeToggle(archetype.name);
+								}
+							}}
+							tabIndex={0}
+							role="button"
+						>
+							<div className="card-body p-4">
+								<h3 className="card-title text-lg">
+									{archetype.emoji} {archetype.name}
+								</h3>
+								<p className="text-sm">
+									Complexity: {archetype.complexity} / 3
+								</p>
+							</div>
+						</div>
+					))}
+				</div>
+				{character && character.archetypes.length > 0 && (
+					<div className="mt-6">
+						<h3 className="text-xl font-semibold mb-2">Selected Archetypes</h3>
+						{character.archetypes.map((archetypeName) => {
+							const archetype = archetypes.find(
+								(a) => a.name === archetypeName,
+							);
+							return archetype ? (
+								<div key={archetype.name} className="mb-4">
+									<h4 className="text-lg font-semibold">
+										{archetype.emoji} {archetype.name}
+									</h4>
+									<p>{archetype.description}</p>
+									<p className="mt-2">Complexity: {archetype.complexity} / 3</p>
+								</div>
+							) : null;
+						})}
 					</div>
-				))}
+				)}
 			</div>
 		</div>
 	);
